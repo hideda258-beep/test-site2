@@ -28,6 +28,10 @@
         @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
         .animate-fadeIn { animation: fadeIn 0.3s ease-out; }
         .animate-slideUp { animation: slideUp 0.4s ease-out; }
+
+        /* スクロールバー非表示（モダンブラウザ） */
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
     </style>
 </head>
 <body class="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-4 text-slate-800">
@@ -83,12 +87,12 @@
             </div>
 
             <!-- Playing Screen -->
-            <div id="screen-playing" class="hidden space-y-8 animate-fadeIn">
+            <div id="screen-playing" class="hidden space-y-6 animate-fadeIn">
                 <div class="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
                     <div id="progress-bar" class="h-full bg-indigo-500 transition-all duration-700 ease-out" style="width: 0%"></div>
                 </div>
 
-                <div class="perspective-1000 h-80 w-full">
+                <div class="perspective-1000 h-[28rem] w-full">
                     <div id="flashcard" onclick="flipCard()" class="card-container relative w-full h-full cursor-pointer">
                         <!-- Front -->
                         <div class="absolute inset-0 backface-hidden bg-white border-2 border-slate-100 rounded-[2rem] flex flex-col items-center justify-center p-8 text-center shadow-sm">
@@ -104,12 +108,18 @@
                             </div>
                         </div>
                         <!-- Back -->
-                        <div class="absolute inset-0 backface-hidden bg-indigo-600 border-2 border-indigo-500 rounded-[2rem] flex flex-col items-center justify-center p-8 text-center rotate-y-180 shadow-indigo-200 shadow-2xl">
-                            <span id="card-back-label" class="text-[10px] font-bold text-indigo-200 uppercase tracking-[0.2em] mb-6">ANSWER</span>
-                            <div class="flex-1 flex items-center justify-center">
-                                <p id="card-back-text" class="text-xl md:text-2xl font-bold text-white leading-snug"></p>
+                        <div class="absolute inset-0 backface-hidden bg-indigo-600 border-2 border-indigo-500 rounded-[2rem] flex flex-col p-8 rotate-y-180 shadow-indigo-200 shadow-2xl overflow-y-auto hide-scrollbar">
+                            <div class="text-center">
+                                <span id="card-back-label" class="text-[10px] font-bold text-indigo-200 uppercase tracking-[0.2em]">ANSWER</span>
+                                <div class="my-6">
+                                    <p id="card-back-text" class="text-2xl md:text-3xl font-black text-white leading-snug"></p>
+                                </div>
                             </div>
-                            <div class="mt-6 text-indigo-200 text-xs font-medium bg-white/10 px-4 py-2 rounded-full">
+                            <div class="mt-auto pt-6 border-t border-indigo-400/30">
+                                <span class="text-[10px] font-black text-indigo-200 uppercase tracking-widest block mb-2 text-center">解説</span>
+                                <p id="card-description-text" class="text-sm md:text-base font-medium text-white/90 leading-relaxed text-left"></p>
+                            </div>
+                            <div class="mt-6 text-indigo-200 text-[10px] font-bold bg-white/10 px-4 py-2 rounded-full text-center shrink-0">
                                 タップで問題に戻る
                             </div>
                         </div>
@@ -205,108 +215,108 @@
     </p>
 
     <script>
-        // クイズデータ
+        // クイズデータ（全100問 + 解説を追加）
         const initialCards = [
-            { id: 1, genre: "基本技術", question: "ウェブサイトの骨組みや情報構造を記述するための言語は何ですか？", answer: "HTML" },
-            { id: 2, genre: "基本技術", question: "HTMLで記述する際に重要な「検索エンジンに見つけてもらいやすくする工夫」を何と呼びますか？", answer: "SEO" },
-            { id: 3, genre: "基本技術", question: "視覚や操作に制限のある人にも情報を正しく届けるための対応を何と呼びますか？", answer: "アクセシビリティ" },
-            { id: 4, genre: "基本技術", question: "ウェブサイトの見た目（文字の大きさ、色、配置など）を整えるための言語は何ですか？", answer: "CSS" },
-            { id: 5, genre: "基本技術", question: "画面サイズに合わせてレイアウトを調整するデザイン手法を何と呼びますか？", answer: "レスポンシブデザイン" },
-            { id: 6, genre: "基本技術", question: "ウェブサイトに動きや反応を加えるための言語は何ですか？", answer: "JavaScript" },
-            { id: 7, genre: "基本技術", question: "HTML、CSS、JavaScriptの3つの技術を組み合わせることで、どのようなウェブサイトが実現できますか？", answer: "情報が伝わり、見た目が分かりやすく、使い勝手の良いサイト" },
-            { id: 8, genre: "基本技術", question: "ウェブサイトの内容を管理・更新するためのシステムを何と呼びますか？", answer: "CMS（コンテンツ管理システム）" },
-            { id: 9, genre: "基本技術", question: "CMSを導入する最大のメリットは何ですか？", answer: "コードを書かずに、管理画面から簡単に更新作業ができること" },
-            { id: 10, genre: "基本技術", question: "CMSを導入することで、企業の情報発信はどう変わりますか？", answer: "エンジニアに頼らず企画職などが更新でき、スピードと効率が向上する" },
-            { id: 11, genre: "基本技術", question: "使いやすいCMSを構築するための設計のポイントは何ですか？", answer: "更新頻度に合わせて編集範囲を制限するなど、使う人目線で設計すること" },
-            { id: 12, genre: "サーバー・仕組み", question: "ウェブサイトを表示するために必要な、インターネット上の「家」に例えられるものは何ですか？", answer: "Webサーバー" },
-            { id: 13, genre: "サーバー・仕組み", question: "ユーザーが検索結果をクリックした際、最初にサーバーの場所を問い合わせるシステムは何ですか？", answer: "DNS" },
-            { id: 14, genre: "サーバー・仕組み", question: "インターネット上の「住所」に該当する、サーバーの場所を示す番号は何ですか？", answer: "IPアドレス" },
-            { id: 15, genre: "サーバー・仕組み", question: "URLの中に含まれる、IPアドレスと紐付いている文字列を何と呼びますか？", answer: "ドメイン" },
-            { id: 16, genre: "サーバー・仕組み", question: "サーバーからダウンロードしたファイルをブラウザが解析し、画面に表示する処理は何ですか？", answer: "レンダリング" },
-            { id: 17, genre: "基本技術", question: "ブラウザ側で動くHTMLやCSS、JavaScriptなどを総称して何言語と呼びますか？", answer: "クライアントサイドの言語" },
-            { id: 18, genre: "基本技術", question: "サーバー側で動くPHPなどを総称して何言語と呼びますか？", answer: "サーバーサイドの言語" },
-            { id: 19, genre: "基本技術", question: "クライアントサイドとサーバーサイド、どちらの言語がイベント（ユーザーの動き）を感知できますか？", answer: "クライアントサイドの言語" },
-            { id: 20, genre: "基本技術", question: "フリーワード検索の結果に応じてHTMLを生成するのは、どちらの言語の役割ですか？", answer: "サーバーサイドの言語" },
-            { id: 21, genre: "制作・ツール", question: "コーディングに使う人気のソフトウェア（エディター）の代表例は何ですか？", answer: "Visual Studio Code" },
-            { id: 22, genre: "制作・ツール", question: "自分のパソコン上に作る開発環境のことを何と呼びますか？", answer: "ローカル環境" },
-            { id: 23, genre: "サーバー・仕組み", question: "ブログの記事データなどが蓄積されている「箱」のようなシステムを何と呼びますか？", answer: "データベース" },
-            { id: 24, genre: "サーバー・仕組み", question: "データベースから必要な情報を引き出してHTMLを生成するのは、どこで行われる処理ですか？", answer: "Webサーバー上" },
-            { id: 25, genre: "サーバー・仕組み", question: "HTML、CSS、JavaScriptのみのサイトではデータベースは必要ですか？", answer: "不要" },
-            { id: 26, genre: "サーバー・仕組み", question: "ローカル環境とサーバーを繋ぎ、ファイルをアップロードするためのソフトは何ですか？", answer: "FTPソフト" },
-            { id: 27, genre: "解析・SEO", question: "Googleなどの検索エンジンで使われる、ウェブサイトの情報を収集するロボットは何ですか？", answer: "クローラー" },
-            { id: 28, genre: "解析・SEO", question: "サイト公開時に、クローラーに情報収集に来てもらうようお願いする作業は何ですか？", answer: "インデックスリクエスト" },
-            { id: 29, genre: "解析・SEO", question: "検索順位を決めるためのGoogleの仕組みを何と呼びますか？", answer: "アルゴリズム" },
-            { id: 30, genre: "解析・SEO", question: "検索結果で上位に表示させるための施策を何と呼びますか？", answer: "SEO対策" },
-            { id: 31, genre: "サーバー・仕組み", question: "独自ドメインでメールアドレスを使うために、設定が必要な2つの場所はどこですか？", answer: "サーバー上とメールソフト側" },
-            { id: 32, genre: "デザイン・設計", question: "ホームページを開いた時に、一番最初に見える画面領域を何と呼びますか？", answer: "ファーストビュー" },
-            { id: 33, genre: "デザイン・設計", question: "デザインを作成する前に作る、画像や文章の配置を示した設計書は何ですか？", answer: "ワイヤーフレーム" },
-            { id: 34, genre: "デザイン・設計", question: "ワイヤーフレームを元に作られる、最終的なデザインの完成イメージは何ですか？", answer: "デザインカンプ" },
-            { id: 35, genre: "デザイン・設計", question: "スマートフォンユーザーが多いサイトで、スマホ版のデザインから先に作る手法は何ですか？", answer: "モバイルファースト" },
-            { id: 36, genre: "デザイン・設計", question: "サイト全体のデザインの一貫性や方向性のことを指す言葉は何ですか？", answer: "トンマナ（トーン＆マナー）" },
-            { id: 37, genre: "解析・指標", question: "ウェブサイトにおける最終的な目標行動（お問い合わせなど）を指す用語は何ですか？", answer: "CV（コンバージョン）" },
-            { id: 38, genre: "解析・指標", question: "サイトへのアクセスのうち、コンバージョンに至った割合を示す指標は何ですか？", answer: "CVR（コンバージョンレート）" },
-            { id: 39, genre: "解析・指標", question: "ユーザーに次の行動（資料請求など）を促す要素を何と呼びますか？", answer: "CTA（またはCTR）" },
-            { id: 40, genre: "解析・指標", question: "重複しない訪問者の数を表す指標は何ですか？", answer: "UU（ユニークユーザー）" },
-            { id: 41, genre: "解析・指標", question: "閲覧されたページの合計数を表す指標は何ですか？", answer: "PV（ページビュー）" },
-            { id: 42, genre: "サーバー・仕組み", question: "インターネット上の「住所」と「家」は、それぞれ何に例えられますか？", answer: "住所はドメイン、家はサーバー" },
-            { id: 43, genre: "サーバー・仕組み", question: "FTPの「F」は何の略ですか？", answer: "File（ファイル）" },
-            { id: 44, genre: "サーバー・仕組み", question: "FTPの「T」は何の略ですか？", answer: "Transfer（転送）" },
-            { id: 45, genre: "サーバー・仕組み", question: "FTPの「P」は何の略ですか？", answer: "Protocol（ルール）" },
-            { id: 46, genre: "解析・ツール", question: "ユーザーがサイト内でどのページを何回見たか分析するGoogleのツールは何ですか？", answer: "Googleアナリティクス" },
-            { id: 47, genre: "解析・ツール", question: "検索キーワードや表示順位を分析するツールは何ですか？", answer: "サーチコンソール" },
-            { id: 48, genre: "解析・ツール", question: "「店内での行動」を観察するツールに例えられるのはどちらですか？", answer: "Googleアナリティクス" },
-            { id: 49, genre: "解析・ツール", question: "「外で看板を見て何人入店したか」を確認するツールに例えられるのはどれ？", answer: "サーチコンソール" },
-            { id: 50, genre: "制作・マインド", question: "専門用語で分からない言葉があった時にすべきことは何ですか？", answer: "放置せず、しっかり調べて覚える" },
-            { id: 51, genre: "基本技術", question: "HTMLでタグを使って意味を持たせることで、何に情報が伝わりやすくなりますか？", answer: "検索エンジン" },
-            { id: 52, genre: "基本技術", question: "音声読み上げツールへの対応は、何の向上に繋がりますか？", answer: "アクセシビリティ" },
-            { id: 53, genre: "基本技術", question: "同じHTMLでも、何を変更すれば見た目を劇的に変えられますか？", answer: "CSS" },
-            { id: 54, genre: "基本技術", question: "フォント、背景色、要素の間隔を調整する役割を持つのは何ですか？", answer: "CSS" },
-            { id: 55, genre: "基本技術", question: "入力フォームの文字数カウントやエラー通知を行う言語は何ですか？", answer: "JavaScript" },
-            { id: 56, genre: "制作・デザイン", question: "ブラウザによって表示が異なる場合、制作側はどうすべきですか？", answer: "表示の差異を調整し配慮する" },
-            { id: 57, genre: "基本技術", question: "WordPressはどのようなシステムの代表例ですか？", answer: "CMS" },
-            { id: 58, genre: "基本技術", question: "非エンジニアでもサイト更新を可能にする仕組みは何ですか？", answer: "CMS" },
-            { id: 59, genre: "基本技術", question: "CMSの管理画面は専用ソフトが必要ですか？", answer: "不要（ブラウザでOK）" },
-            { id: 60, genre: "サーバー・仕組み", question: "サイト公開に一般的に契約が必要な2つのものは何ですか？", answer: "ドメインとレンタルサーバー" },
-            { id: 61, genre: "制作・マインド", question: "Web制作の学習で、技術のほかに何を把握することが重要ですか？", answer: "各技術の相関関係と全体像" },
-            { id: 62, genre: "基本技術", question: "CMS導入で、更新を担当できるようになるのはどんな職種ですか？", answer: "企画職など非エンジニア" },
-            { id: 63, genre: "サーバー・仕組み", question: "Webサーバーへアクセスする際、DNSから取得する情報は何ですか？", answer: "IPアドレス" },
-            { id: 64, genre: "基本技術", question: "ユーザーのブラウザ上で実行される言語はどちらのタイプですか？", answer: "クライアントサイド" },
-            { id: 65, genre: "基本技術", question: "スクロールに合わせてアニメーションを動かす言語は何ですか？", answer: "JavaScript" },
-            { id: 66, genre: "基本技術", question: "ブログ一覧の並び替え処理など、HTML生成前行うのはどちら側？", answer: "サーバー側" },
-            { id: 67, genre: "制作・ツール", question: "ローカル環境構築用アプリの例は何ですか？", answer: "Local by Flywheel, MAMPなど" },
-            { id: 68, genre: "制作・ツール", question: "Visual Studio Codeを使う大きなメリットは何ですか？", answer: "利用者が多く情報が豊富なこと" },
-            { id: 69, genre: "サーバー・仕組み", question: "初心者がデータベース構造を自作しなくても済む理由は何ですか？", answer: "WordPress等がパッケージ化されているから" },
-            { id: 70, genre: "制作・マインド", question: "Web制作の学習順序として、先に学ぶべきなのはどちらですか？", answer: "クライアントサイド（HTML/CSS等）" },
-            { id: 71, genre: "サーバー・ツール", question: "FTPソフトの代わりに、WordPress移行でよく使われる手法は何ですか？", answer: "移行用プラグインの利用" },
-            { id: 72, genre: "解析・SEO", question: "クローラーはどうやって新しいサイトを見つけますか？", answer: "リンクを辿って巡回する" },
-            { id: 73, genre: "解析・SEO", question: "クローラーが集めた情報はどこに保存されますか？", answer: "Googleのデータベース" },
-            { id: 74, genre: "解析・SEO", question: "検索エンジンのアルゴリズムは公開されていますか？", answer: "非公開" },
-            { id: 75, genre: "サーバー・仕組み", question: "メールソフトを使うには、何と接続設定する必要がありますか？", answer: "メールサーバー" },
-            { id: 76, genre: "デザイン・設計", question: "サイトの第一印象を決める最重要エリアはどこですか？", answer: "ファーストビュー" },
-            { id: 77, genre: "デザイン・設計", question: "ワイヤーフレームを作る主な目的は何ですか？", answer: "デザイン前に構造や配置を確定させるため" },
-            { id: 78, genre: "デザイン・設計", question: "デザインカンプがないと、どのような問題が起きますか？", answer: "完成イメージが共有できず制作が止まる" },
-            { id: 79, genre: "デザイン・設計", question: "多様なデバイスに対応するために必須の考え方は何ですか？", answer: "レスポンスブデザイン" },
-            { id: 80, genre: "デザイン・設計", question: "PC版をスマホでそのまま見た時の主な問題は何ですか？", answer: "ボタンが押しにくい、操作性が下がる" },
-            { id: 81, genre: "デザイン・設計", question: "トンマナで「親しみやすさ」を出すために調整する要素は何ですか？", answer: "色、フォント、写真の雰囲気など" },
-            { id: 82, genre: "解析・指標", question: "CV（コンバージョン）の具体的なアクション例は何ですか？", answer: "資料請求、お問い合わせ" },
-            { id: 83, genre: "解析・指標", question: "100人中3人がCVした場合、CVRは何％ですか？", answer: "3%" },
-            { id: 84, genre: "解析・指標", question: "「今すぐ申し込み」など行動を促す要素を何と呼びますか？", answer: "CTA（動画内ではCTR）" },
-            { id: 85, genre: "解析・指標", question: "1人が5回訪問した場合、UU数はいくつですか？", answer: "1" },
-            { id: 86, genre: "解析・指標", question: "1人が5回訪問した場合、PV数はいくつですか？", answer: "5" },
-            { id: 87, genre: "サーバー・仕組み", question: "サイト公開時、ドメインと何を紐付ける必要がありますか？", answer: "サーバー" },
-            { id: 88, genre: "サーバー・仕組み", question: "画像や文章のまとまりを何と呼びますか？", answer: "ファイル" },
-            { id: 89, genre: "サーバー・仕組み", question: "作成したファイルを一括でサーバーに送るために使うソフトは何ですか？", answer: "FTPソフト" },
-            { id: 90, genre: "サーバー・仕組み", question: "サーバー管理画面から手動アップロードする際のデメリットは何ですか？", answer: "ログインの手間がかかり効率が悪い" },
-            { id: 91, genre: "解析・ツール", question: "サイト内でのユーザー行動を可視化するのはどのツールですか？", answer: "Googleアナリティクス" },
-            { id: 92, genre: "解析・ツール", question: "検索画面でのクリック数や表示キーワードを分析するのはどのツールですか？", answer: "サーチコンソール" },
-            { id: 93, genre: "解析・ツール", question: "特定の検索ワードでのサイト順位を確認できるツールは何ですか？", answer: "サーチコンソール" },
-            { id: 94, genre: "解析・ツール", question: "アナリティクスとサチコを併用する最大のメリットは何ですか？", answer: "集客からサイト内行動まで一貫して分析できる" },
-            { id: 95, genre: "制作・マインド", question: "専門用語を覚えることの実務上のメリットは何ですか？", answer: "周囲との意思疎通がスムーズになり信頼される" },
-            { id: 96, genre: "制作・マインド", question: "用語を調べてさらに不明点が出た時、どうすべきですか？", answer: "芋づる式に調べて知識を定着させる" },
-            { id: 97, genre: "基本技術", question: "DBへ問い合わせてブログ一覧を作るのは、どちら側の言語ですか？", answer: "サーバーサイド" },
-            { id: 98, genre: "解析・ツール", question: "Googleアナリティクス提供元はどこですか？", answer: "Google" },
-            { id: 99, genre: "解析・ツール", question: "サーチコンソールの提供元はどこですか？", answer: "Google" },
-            { id: 100, genre: "解析・ツール", question: "サーチコンソールは通称何と呼ばれますか？", answer: "サチコ" }
+            { id: 1, genre: "基本技術", question: "ウェブサイトの骨組みや情報構造を記述するための言語は何ですか？", answer: "HTML", description: "HyperText Markup Languageの略。タグを使って見出しや段落などの構造を指定します。" },
+            { id: 2, genre: "基本技術", question: "HTMLで記述する際に重要な「検索エンジンに見つけてもらいやすくする工夫」を何と呼びますか？", answer: "SEO", description: "Search Engine Optimization（検索エンジン最適化）。適切なタグ選びやキーワード配置が重要です。" },
+            { id: 3, genre: "基本技術", question: "視覚や操作に制限のある人にも情報を正しく届けるための対応を何と呼びますか？", answer: "アクセシビリティ", description: "誰でも、どんなデバイスでも同じように情報を得られるようにする設計の配慮です。" },
+            { id: 4, genre: "基本技術", question: "ウェブサイトの見た目（文字の大きさ、色、配置など）を整えるための言語は何ですか？", answer: "CSS", description: "Cascading Style Sheetsの略。HTMLで定義した構造に対し、デザインを適用します。" },
+            { id: 5, genre: "基本技術", question: "画面サイズに合わせてレイアウトを調整するデザイン手法を何と呼びますか？", answer: "レスポンシブデザイン", description: "PC、タブレット、スマホなど、異なる画面幅に対応させる単一のファイル管理手法です。" },
+            { id: 6, genre: "基本技術", question: "ウェブサイトに動きや反応を加えるための言語は何ですか？", answer: "JavaScript", description: "ブラウザ上で動作するプログラミング言語。スライドショーやバリデーションなどに使われます。" },
+            { id: 7, genre: "基本技術", question: "HTML、CSS、JavaScriptの3つの技術を組み合わせることで、どのようなウェブサイトが実現できますか？", answer: "情報が伝わり、見た目が分かりやすく、使い勝手の良いサイト", description: "構造・装飾・動作の3要素が揃うことで、現代的なWebサイトが完成します。" },
+            { id: 8, genre: "基本技術", question: "ウェブサイトの内容を管理・更新するためのシステムを何と呼びますか？", answer: "CMS", description: "Content Management Systemの略。専門知識がなくてもWebサイトを管理できるツールです。" },
+            { id: 9, genre: "基本技術", question: "CMSを導入する最大のメリットは何ですか？", answer: "コードを書かずに、管理画面から簡単に更新作業ができること", description: "エンジニア以外の担当者でもブログ更新や情報の追加が容易になります。" },
+            { id: 10, genre: "基本技術", question: "CMSを導入することで、企業の情報発信はどう変わりますか？", answer: "エンジニアに頼らず企画職などが更新でき、スピードと効率が向上する", description: "外注コストの削減や、タイムリーな情報発信が可能になります。" },
+            { id: 11, genre: "基本技術", question: "使いやすいCMSを構築するための設計のポイントは何ですか？", answer: "更新頻度に合わせて編集範囲を制限するなど、使う人目線で設計すること", description: "多機能すぎると使いにくくなるため、運用者のITスキルに合わせたカスタイマイズが重要です。" },
+            { id: 12, genre: "サーバー・仕組み", question: "ウェブサイトを表示するために必要な、インターネット上の「家」に例えられるものは何ですか？", answer: "Webサーバー", description: "ファイルを保管し、ユーザーの要求に応じてデータを送信する役割を持つコンピュータです。" },
+            { id: 13, genre: "サーバー・仕組み", question: "ユーザーが検索結果をクリックした際、最初にサーバーの場所を問い合わせるシステムは何ですか？", answer: "DNS", description: "Domain Name System。ドメイン名（URL）をIPアドレスに変換する、ネット上の電話帳のような仕組みです。" },
+            { id: 14, genre: "サーバー・仕組み", question: "インターネット上の「住所」に該当する、サーバーの場所を示す番号は何ですか？", answer: "IPアドレス", description: "192.168...のような数字の羅列。ネット上の各デバイスを特定するための識別番号です。" },
+            { id: 15, genre: "サーバー・仕組み", question: "URLの中に含まれる、IPアドレスと紐付いている文字列を何と呼びますか？", answer: "ドメイン", description: "example.comのような形式。数字のIPアドレスを人間が覚えやすい言葉に置き換えたものです。" },
+            { id: 16, genre: "サーバー・仕組み", question: "サーバーからダウンロードしたファイルをブラウザが解析し、画面に表示する処理は何ですか？", answer: "レンダリング", description: "ブラウザがHTML/CSSなどを読み込んで、私たちが目にするWebページへと組み立てる工程です。" },
+            { id: 17, genre: "基本技術", question: "ブラウザ側で動くHTMLやCSS、JavaScriptなどを総称して何言語と呼びますか？", answer: "クライアントサイドの言語", description: "ユーザー（クライアント）の手元にあるブラウザ上で直接処理される技術のことです。" },
+            { id: 18, genre: "基本技術", question: "サーバー側で動くPHPなどを総称して何言語と呼びますか？", answer: "サーバーサイドの言語", description: "Webサーバーの中で処理が行われ、結果のみがブラウザに送られる技術のことです。" },
+            { id: 19, genre: "基本技術", question: "クライアントサイドとサーバーサイド、どちらの言語がイベント（ユーザーの動き）を感知できますか？", answer: "クライアントサイドの言語", description: "クリック、スクロール、入力などのリアルタイムな挙動を捉えるのが得意です。" },
+            { id: 20, genre: "基本技術", question: "フリーワード検索の結果に応じてHTMLを生成するのは、どちらの言語の役割ですか？", answer: "サーバーサイドの言語", description: "データベースと連携して動的に情報を組み立てるのはサーバー側の重要な役割です。" },
+            { id: 21, genre: "制作・ツール", question: "コーディングに使う人気のソフトウェア（エディター）の代表例は何ですか？", answer: "Visual Studio Code", description: "Microsoftが開発。拡張機能が豊富で、現在のWeb制作業界で最も標準的なツールです。" },
+            { id: 22, genre: "制作・ツール", question: "自分のパソコン上に作る開発環境のことを何と呼びますか？", answer: "ローカル環境", description: "公開サーバーへ上げる前に、安全に制作やテストを行うための自分の端末内の領域です。" },
+            { id: 23, genre: "サーバー・仕組み", question: "ブログの記事データなどが蓄積されている「箱」のようなシステムを何と呼びますか？", answer: "データベース", description: "大量のデータを効率的に整理・保管・検索するための専用システムです（MySQLなど）。" },
+            { id: 24, genre: "サーバー・仕組み", question: "データベースから必要な情報を引き出してHTMLを生成するのは、どこで行われる処理ですか？", answer: "Webサーバー上", description: "PHPなどがデータベースにアクセスし、記事を埋め込んだHTMLを作成してブラウザへ返します。" },
+            { id: 25, genre: "サーバー・仕組み", question: "HTML、CSS、JavaScriptのみのサイトではデータベースは必要ですか？", answer: "不要", description: "「静的サイト」と呼ばれ、サーバーにあるファイルをそのまま表示するだけなのでDBは使いません。" },
+            { id: 26, genre: "サーバー・仕組み", question: "ローカル環境とサーバーを繋ぎ、ファイルをアップロードするためのソフトは何ですか？", answer: "FTPソフト", description: "File Transfer Protocol用ソフト。FileZillaなどが有名です。" },
+            { id: 27, genre: "解析・SEO", question: "Googleなどの検索エンジンで使われる、ウェブサイトの情報を収集するロボットは何ですか？", answer: "クローラー", description: "ネット上を巡回し、Webサイトの内容をスキャンしてGoogleの索引に登録するプログラムです。" },
+            { id: 28, genre: "解析・SEO", question: "サイト公開時に、クローラーに情報収集に来てもらうようお願いする作業は何ですか？", answer: "インデックスリクエスト", description: "サーチコンソールなどを使って、新しいサイトが存在することをGoogleに通知する作業です。" },
+            { id: 29, genre: "解析・SEO", question: "検索順位を決めるためのGoogleの仕組みを何と呼びますか？", answer: "アルゴリズム", description: "200以上の評価基準があるとされ、ユーザーに役立つサイトほど上位になるよう設計されています。" },
+            { id: 30, genre: "解析・SEO", question: "検索結果で上位に表示させるための施策を何と呼びますか？", answer: "SEO対策", description: "キーワード選定、内部構造の最適化、良質なコンテンツ作成などが含まれます。" },
+            { id: 31, genre: "サーバー・仕組み", question: "独自ドメインでメールアドレスを使うために、設定が必要な2つの場所とどこですか？", answer: "サーバー上とメールソフト側", description: "サーバーでアドレスを作成し、OutlookやGmailなどのソフトに受信設定を入れます。" },
+            { id: 32, genre: "デザイン・設計", question: "ホームページを開いた時に、一番最初に見える画面領域を何と呼びますか？", answer: "ファーストビュー", description: "スクロールせずに見える範囲。サイトの離脱率に大きく影響する最重要ポイントです。" },
+            { id: 33, genre: "デザイン・設計", question: "デザインを作成する前に作る、画像や文章の配置を示した設計書は何ですか？", answer: "ワイヤーフレーム", description: "色のつかない「骨組み図」。情報の優先順位やレイアウトを確定させるために作ります。" },
+            { id: 34, genre: "デザイン・設計", question: "ワイヤーフレームを元に作られる、最終的なデザインの完成イメージは何ですか？", answer: "デザインカンプ", description: "フォントや色、写真も入った「完成見本図」。これをエンジニアがコーディングします。" },
+            { id: 35, genre: "デザイン・設計", question: "スマートフォンユーザーが多いサイトで、スマホ版のデザインから先に作る手法は何ですか？", answer: "モバイルファースト", description: "PC版を後回しにし、操作に制約の多いスマホ版から設計することで使いやすさを担保します。" },
+            { id: 36, genre: "デザイン・設計", question: "サイト全体のデザインの一貫性や方向性のことを指す言葉は何ですか？", answer: "トンマナ", description: "トーン＆マナーの略。色使い、余白感、言葉遣いなどを揃えることでブランドを表現します。" },
+            { id: 37, genre: "解析・指標", question: "ウェブサイトにおける最終的な目標行動（お問い合わせなど）を指す用語は何ですか？", answer: "CV（コンバージョン）", description: "Conversion。商品の購入や資料請求など、ビジネス成果となるアクションのことです。" },
+            { id: 38, genre: "解析・指標", question: "サイトへのアクセスのうち、コンバージョンに至った割合を示す指標は何ですか？", answer: "CVR", description: "Conversion Rate。CV数 ÷ セッション数で計算される、サイトの効率性を示す重要指標です。" },
+            { id: 39, genre: "解析・指標", question: "ユーザーに次の行動（資料請求など）を促す要素を何と呼びますか？", answer: "CTA（またはCTR）", description: "Call to Action。ボタンやバナーで、ユーザーに「次は何をすべきか」を明示することです。" },
+            { id: 40, genre: "解析・指標", question: "重複しない訪問者の数を表す指標は何ですか？", answer: "UU（ユニークユーザー）", description: "同じ人が1日に何度訪問しても「1」と数えます。サイトに何人の人が来ているかを測ります。" },
+            { id: 41, genre: "解析・指標", question: "閲覧されたページの合計数を表す指標は何ですか？", answer: "PV（ページビュー）" , description: "ページが読み込まれた回数。UUが少なくても、一人が何ページも読めばPVは増えます。" },
+            { id: 42, genre: "サーバー・仕組み", question: "インターネット上の「住所」と「家」は、それぞれ何に例えられますか？", answer: "住所はドメイン、家はサーバー", description: "ドメイン（名前）を知ることで、サーバー（中身がある場所）に辿り着けます。" },
+            { id: 43, genre: "サーバー・仕組み", question: "FTPの「F」は何の略ですか？", answer: "File（ファイル）", description: "データのまとまりを指します。" },
+            { id: 44, genre: "サーバー・仕組み", question: "FTPの「T」は何の略ですか？", answer: "Transfer（転送）", description: "移動させることを指します。" },
+            { id: 45, genre: "サーバー・仕組み", question: "FTPの「P」は何の略ですか？", answer: "Protocol（ルール）", description: "通信するための共通の決まりごとです。" },
+            { id: 46, genre: "解析・ツール", question: "ユーザーがサイト内でどのページを何回見たか分析するGoogleのツールは何ですか？", answer: "Googleアナリティクス", description: "アクセスログを解析し、ユーザー属性や回遊パターンなどを詳しく調査できます。" },
+            { id: 47, genre: "解析・ツール", question: "検索キーワードや表示順位を分析するツールは何ですか？", answer: "サーチコンソール", description: "Google検索結果でのパフォーマンスを管理するツール。サイトの健康診断にも使われます。" },
+            { id: 48, genre: "解析・ツール", question: "「店内での行動」を観察するツールに例えられるのはどちらですか？", answer: "Googleアナリティクス", description: "店に入った後の人の動き（滞在時間、見て回った棚など）を分析するのが得意です。" },
+            { id: 49, genre: "解析・ツール", question: "「外で看板を見て何人入店したか」を確認するツールに例えられるのはどれ？", answer: "サーチコンソール", description: "店に入る前（検索結果）のユーザーがどのような意図で来たのかを分析するのが得意です。" },
+            { id: 50, genre: "制作・マインド", question: "専門用語で分からない言葉があった時にすべきことは何ですか？", answer: "放置せず、しっかり調べて覚える", description: "Web制作は専門用語の掛け合わせでできています。一つ一つの理解が成長の近道です。" },
+            { id: 51, genre: "基本技術", question: "HTMLでタグを使って意味を持たせることで、何に情報が伝わりやすくなりますか？", answer: "検索エンジン", description: "h1は見出し、pは段落、といった「意味づけ」を機械（クローラー）が理解しやすくなります。" },
+            { id: 52, genre: "基本技術", question: "音声読み上げツールへの対応は、何の向上に繋がりますか？", answer: "アクセシビリティ", description: "視覚障害のある方が読み上げ機能を使って内容を理解できるような配慮が含まれます。" },
+            { id: 53, genre: "基本技術", question: "同じHTMLでも、何を変更すれば見た目を劇的に変えられますか？", answer: "CSS", description: "レイアウトや装飾を管理しているのはCSSだけなので、CSSを差し替えるだけで全く別サイトのようにできます。" },
+            { id: 54, genre: "基本技術", question: "フォント、背景色、要素の間隔を調整する役割を持つのは何ですか？", answer: "CSS", description: "デザインに関わる数値やプロパティの指定はすべてCSSで行います。" },
+            { id: 55, genre: "基本技術", question: "入力フォームの文字数カウントやエラー通知を行う言語は何ですか？", answer: "JavaScript", description: "画面を更新せずに「その場」で反応を返すのはJavaScriptの得意分野です。" },
+            { id: 56, genre: "制作・デザイン", question: "ブラウザによって表示が異なる場合、制作側はどうすべきですか？", answer: "表示の差異を調整し配慮する", description: "「クロスブラウザ対応」と呼ばれ、Safari, Chrome等で同じように見えるかテストが必須です。" },
+            { id: 57, genre: "基本技術", question: "WordPressはどのようなシステムの代表例ですか？", answer: "CMS", description: "世界で最もシェアが高いCMSです。PHPとMySQLで動作します。" },
+            { id: 58, genre: "基本技術", question: "非エンジニアでもサイト更新を可能にする仕組みは何ですか？", answer: "CMS", description: "管理画面のUI（ボタンや入力欄）が、裏側の複雑なコードを隠してくれます。" },
+            { id: 59, genre: "基本技術", question: "CMSの管理画面は専用ソフトが必要ですか？", answer: "不要（ブラウザでOK）", description: "普段使っているブラウザからURLにアクセスしてログインするだけで操作可能です。" },
+            { id: 60, genre: "サーバー・仕組み", question: "サイト公開に一般的に契約が必要な2つのものは何ですか？", answer: "ドメインとレンタルサーバー", description: "土地（サーバー）を借りて、看板（ドメイン）を立てる準備が必要です。" },
+            { id: 61, genre: "制作・マインド", question: "Web制作の学習で、技術のほかに何を把握することが重要ですか？", answer: "各技術の相関関係と全体像", description: "単体スキルだけでなく「HTMLがどうサーバーを通ってブラウザへ行くか」という流れの理解が実務で役立ちます。" },
+            { id: 62, genre: "基本技術", question: "CMS導入で、更新を担当できるようになるのはどんな職種ですか？", answer: "企画職など非エンジニア", description: "エンジニアの手を止めずに情報発信できるようになり、チーム全体の生産性が上がります。" },
+            { id: 63, genre: "サーバー・仕組み", question: "Webサーバーへアクセスする際、DNSから取得する情報は何ですか？", answer: "IPアドレス", description: "名前解決と呼ばれ、ブラウザはIPアドレスを知ることで初めてサーバーに辿り着けます。" },
+            { id: 64, genre: "基本技術", question: "ユーザーのブラウザ上で実行される言語はどちらのタイプですか？", answer: "クライアントサイド", description: "HTML/CSS/JSはすべてこのタイプです。" },
+            { id: 65, genre: "基本技術", question: "スクロールに合わせてアニメーションを動かす言語は何ですか？", answer: "JavaScript", description: "スクロール量という「イベント」を検知してCSSアニメーションのスイッチを入れる役割をします。" },
+            { id: 66, genre: "基本技術", question: "ブログ一覧の並び替え処理など、HTML生成前行うのはどちら側？", answer: "サーバー側", description: "最新の10件をDBから持ってくる、といった「データの選別」はサーバーの仕事です。" },
+            { id: 67, genre: "制作・ツール", question: "ローカル環境構築用アプリの例は何ですか？", answer: "Local by Flywheel, MAMPなど", description: "自分のPCに擬似的なWebサーバーをボタン一つで作れるツールです。" },
+            { id: 68, genre: "制作・ツール", question: "Visual Studio Codeを使う大きなメリットは何ですか？", answer: "利用者が多く情報が豊富なこと", description: "困った時の解決策がすぐに見つかり、チーム内での環境共有もしやすいためです。" },
+            { id: 69, genre: "サーバー・仕組み", question: "初心者がデータベース構造を自作しなくても済む理由は何ですか？", answer: "WordPress等がパッケージ化されているから", description: "CMSを使えば、裏側の難しいDB設計はすでに終わった状態で始められます。" },
+            { id: 70, genre: "制作・マインド", question: "Web制作の学習順序として、先に学ぶべきなのはどちらですか？", answer: "クライアントサイド", description: "画面が見える楽しさがあり、基礎となるHTML/CSSの理解がないとサーバー側の出力も作れないためです。" },
+            { id: 71, genre: "サーバー・ツール", question: "FTPソフトの代わりに、WordPress移行でよく使われる手法は何ですか？", answer: "プラグインの利用", description: "All-in-One WP Migrationなどのツールを使えば、難しい設定なしで環境移設ができます。" },
+            { id: 72, genre: "解析・SEO", question: "クローラーはどうやって新しいサイトを見つけますか？", answer: "リンクを辿って巡回する", description: "「クモ」が巣を張るように、既存サイトから伸びるリンクという糸を辿って世界を回っています。" },
+            { id: 73, genre: "解析・SEO", question: "クローラーが集めた情報はどこに保存されますか？", answer: "Googleのデータベース", description: "ここに格納されることを「インデックス」と呼び、検索結果に表示される準備が整った状態を指します。" },
+            { id: 74, genre: "解析・SEO", question: "検索エンジンのアルゴリズムは公開されていますか？", answer: "非公開", description: "悪用を防ぐため詳細は秘密ですが、Googleは「ユーザーに価値あるサイトを作る」という指針のみ示しています。" },
+            { id: 75, genre: "サーバー・仕組み", question: "メールソフトを使うには、何と接続設定する必要がありますか？", answer: "メールサーバー", description: "SMTP（送信）やPOP/IMAP（受信）といった専用のサーバー設定が必要です。" },
+            { id: 76, genre: "デザイン・設計", question: "サイトの第一印象を決める最重要エリアはどこですか？", answer: "ファーストビュー", description: "ここで「探していた情報がない」と思われたら、3秒以内にユーザーは去ってしまいます。" },
+            { id: 77, genre: "デザイン・設計", question: "ワイヤーフレームを作る主な目的は何ですか？", answer: "デザイン前に配置を確定させるため", description: "デザインをしてから「ここに入力欄が足りない」と気づくと修正コストが高くなるため、白黒の図で合意を取ります。" },
+            { id: 78, genre: "デザイン・設計", question: "デザインカンプがないと、どのような問題が起きますか？", answer: "完成イメージが共有できず制作が止まる", description: "エンジニアが「何色のどのフォントを使えばいいか」迷ってしまい、作業効率が下がります。" },
+            { id: 79, genre: "デザイン・設計", question: "多様なデバイスに対応するために必須の考え方は何ですか？", answer: "レスポンシブデザイン", description: "画面幅によって要素を横に並べたり、縦に並べ替えたりする仕組みです。" },
+            { id: 80, genre: "デザイン・設計", question: "PC版をスマホでそのまま見た時の主な問題は何ですか？", answer: "操作性が下がる", description: "ボタンが小さすぎて押せない、文字が小さすぎて読めない、といった問題が発生します。" },
+            { id: 81, genre: "デザイン・設計", question: "トンマナで「親しみやすさ」を出すために調整する要素は何ですか？", answer: "色、フォント、写真の雰囲気など", description: "暖色系の丸いフォントや、笑顔の人物写真などを使うことで「安心感」を演出します。" },
+            { id: 82, genre: "解析・指標", question: "CV（コンバージョン）の具体的なアクション例は何ですか？", answer: "資料請求、お問い合わせ", description: "売上に直結する行動をあらかじめ定義しておき、その回数を計測します。" },
+            { id: 83, genre: "解析・指標", question: "100人中3人がCVした場合、CVRは何％ですか？", answer: "3%", description: "この数値を上げることが、広告費の効率化やWebサイト改善のゴールになります。" },
+            { id: 84, genre: "解析・指標", question: "「今すぐ申し込み」など行動を促す要素を何と呼びますか？", answer: "CTA（動画内ではCTR）", description: "ユーザーの心理的なハードルを下げ、行動を後押しする重要なUIパーツです。" },
+            { id: 85, genre: "解析・指標", question: "1人が5回訪問した場合、UU数はいくつですか？", answer: "1", description: "サイトの認知度やファンの数（のべ人数ではない実数）を把握するために見ます。" },
+            { id: 86, genre: "解析・指標", question: "1人が5回訪問した場合、PV数はいくつですか？", answer: "5", description: "ページが何回表示されたかという絶対的な露出量を示します。" },
+            { id: 87, genre: "サーバー・仕組み", question: "サイト公開時、ドメインと何を紐付ける必要がありますか？", answer: "サーバー", description: "DNSの設定で「このドメインはこのサーバーに向けます」と宣言することでアクセス可能になります。" },
+            { id: 88, genre: "サーバー・仕組み", question: "画像や文章のまとまりを何と呼びますか？", answer: "ファイル", description: "Webサイトはこれら大量のファイル（HTML, JPG, CSS等）が集まってできています。" },
+            { id: 89, genre: "サーバー・仕組み", question: "作成したファイルを一括でサーバーに送るために使うソフトは何ですか？", answer: "FTPソフト", description: "大量のフォルダ階層を崩さず、まとめて高速にアップロードするために必須のツールです。" },
+            { id: 90, genre: "サーバー・仕組み", question: "サーバー管理画面から手動アップロードする際のデメリットは何ですか？", answer: "ログインの手間がかかり効率が悪い", description: "ファイル数が多いWeb制作では、ドラッグ＆ドロップで同期できるFTPソフトの方が圧倒的に早いです。" },
+            { id: 91, genre: "解析・ツール", question: "サイト内でのユーザー行動を可視化するのはどのツールですか？", answer: "Googleアナリティクス", description: "どのページで離脱したか、どの順番で巡回したかを時系列で追跡できます。" },
+            { id: 92, genre: "解析・ツール", question: "検索画面でのクリック数や表示キーワードを分析するのはどのツールですか？", answer: "サーチコンソール", description: "ユーザーが何に困って、どんな言葉を打って辿り着いたかを「入口」で捉えます。" },
+            { id: 93, genre: "解析・ツール", question: "特定の検索ワードでのサイト順位を確認できるツールは何ですか？", answer: "サーチコンソール", description: "自分のサイトが平均して何位に表示されているかをグラフで把握できます。" },
+            { id: 94, genre: "解析・ツール", question: "アナリティクスとサチコを併用する最大のメリットは何ですか？", answer: "一貫して分析できる", description: "集客（入口）と回遊（店内）の両方を知ることで、真の改善ポイントが見えてきます。" },
+            { id: 95, genre: "制作・マインド", question: "専門用語を覚えることの実務上のメリットは何ですか？", answer: "信頼される", description: "「あれ」や「これ」ではなく、正確な名称で会話することでプロとしての評価が高まります。" },
+            { id: 96, genre: "制作・マインド", question: "用語を調べてさらに不明点が出た時、どうすべきですか？", answer: "芋づる式に調べて知識を定着させる", description: "Web技術は繋がっています。一つを深く追うことで、周辺知識も自然と身につきます。" },
+            { id: 97, genre: "基本技術", question: "DBへ問い合わせてブログ一覧を作るのは、どちら側の言語ですか？", answer: "サーバーサイド", description: "PHPなどがSQLという命令文でDBから記事を拾い出し、HTMLを組み立てます。" },
+            { id: 98, genre: "解析・ツール", question: "Googleアナリティクス提供元はどこですか？", answer: "Google", description: "Web解析における世界標準のデファクトスタンダードです。" },
+            { id: 99, genre: "解析・ツール", question: "サーチコンソールの提供元はどこですか？", answer: "Google", description: "SEO担当者にとって必須のインフラツールです。" },
+            { id: 100, genre: "解析・ツール", question: "サーチコンソールは通称何と呼ばれますか？", answer: "サチコ", description: "現場でよく使われる愛称です。" }
         ];
 
         // State
@@ -316,7 +326,6 @@
         let showAnswerFirst = false;
         let masteredIds = new Set();
         let unsureIds = new Set();
-        let expandedId = null;
 
         // UI Helpers
         function showScreen(screenId) {
@@ -325,7 +334,6 @@
             });
             document.getElementById('screen-' + screenId).classList.remove('hidden');
             
-            // ヘッダー制御
             if (screenId === 'playing') {
                 document.getElementById('header').classList.remove('hidden');
             } else {
@@ -375,31 +383,29 @@
             const card = cards[currentIndex];
             const genreEl = document.getElementById('card-genre');
             
-            // ジャンル色リセット
             genreEl.className = `absolute top-8 px-4 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border ${getGenreColor(card.genre)}`;
             genreEl.innerText = card.genre;
 
             if (showAnswerFirst) {
                 document.getElementById('card-front-text').innerText = card.answer;
                 document.getElementById('card-back-text').innerText = card.question;
-                document.getElementById('card-back-label').innerText = "EXPLANATION";
+                document.getElementById('card-back-label').innerText = "QUESTION (DETAILS)";
+                document.getElementById('card-description-text').innerText = card.description;
             } else {
                 document.getElementById('card-front-text').innerText = card.question;
                 document.getElementById('card-back-text').innerText = card.answer;
                 document.getElementById('card-back-label').innerText = "ANSWER";
+                document.getElementById('card-description-text').innerText = card.description;
             }
 
-            // プログレスバー
             const progress = ((currentIndex + 1) / cards.length) * 100;
             document.getElementById('progress-bar').style.width = `${progress}%`;
             document.getElementById('current-pos').innerText = currentIndex + 1;
-
-            // 戻るボタン状態
             document.getElementById('btn-prev').disabled = currentIndex === 0;
 
-            // 向きリセット
             isFlipped = false;
             document.getElementById('flashcard').classList.remove('is-flipped');
+            document.getElementById('flashcard').scrollTop = 0; // スクロール位置リセット
         }
 
         function nextCard() {
@@ -454,7 +460,6 @@
             const targetSet = type === 'unsure' ? unsureIds : masteredIds;
             const items = initialCards.filter(c => targetSet.has(c.id));
             
-            // UI更新
             document.getElementById('overlay-title').innerText = type === 'unsure' ? '不安な問題' : '習得した問題';
             document.getElementById('overlay-count').innerText = `${items.length} items`;
             
@@ -480,15 +485,23 @@
                 items.forEach(card => {
                     const item = document.createElement('div');
                     item.className = 'bg-white p-4 rounded-2xl border border-slate-100 shadow-sm hover:border-slate-200 transition-all cursor-pointer';
+                    // カード全体をクリック可能にする
+                    item.onclick = () => toggleListItem(card.id);
                     item.innerHTML = `
-                        <div class="flex justify-between items-start" onclick="toggleListItem(${card.id})">
+                        <div class="flex justify-between items-start">
                             <span class="px-2 py-0.5 rounded-md text-[8px] font-black border ${getGenreColor(card.genre)}">${card.genre}</span>
                             <i data-lucide="chevron-down" id="chevron-${card.id}" class="w-4 h-4 text-slate-300 transition-transform"></i>
                         </div>
                         <p class="mt-2 text-sm font-bold text-slate-800 leading-snug">${card.question}</p>
-                        <div id="answer-${card.id}" class="hidden mt-4 bg-indigo-50/50 p-4 rounded-xl border border-indigo-100 flex flex-col gap-2">
-                             <span class="text-[10px] font-black text-indigo-400 uppercase tracking-widest border-b border-indigo-100 pb-1">解説・答え</span>
-                             <p class="text-base font-black text-indigo-600 leading-relaxed">${card.answer}</p>
+                        <div id="answer-${card.id}" class="hidden mt-4 space-y-3">
+                             <div class="bg-indigo-600 p-4 rounded-xl shadow-inner">
+                                <span class="text-[10px] font-black text-indigo-200 uppercase tracking-widest border-b border-indigo-400/50 pb-1 block mb-2 text-center">答え</span>
+                                <p class="text-lg font-black text-white text-center">${card.answer}</p>
+                             </div>
+                             <div class="bg-indigo-50 p-4 rounded-xl border border-indigo-100">
+                                <span class="text-[10px] font-black text-indigo-400 uppercase tracking-widest border-b border-indigo-200 pb-1 block mb-2">解説</span>
+                                <p class="text-sm font-medium text-slate-600 leading-relaxed">${card.description}</p>
+                             </div>
                         </div>
                     `;
                     listContainer.appendChild(item);
