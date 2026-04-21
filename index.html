@@ -1,0 +1,511 @@
+import React, { useState, useEffect, useMemo } from 'react';
+import { ChevronLeft, RotateCcw, Shuffle, Play, CheckCircle2, Languages, Info, Check, MousePointerClick, HelpCircle, X, Home, ChevronDown, ChevronUp } from 'lucide-react';
+
+// --- クイズデータ (100問 + ジャンル) ---
+const initialCards = [
+  { id: 1, genre: "基本技術", question: "ウェブサイトの骨組みや情報構造を記述するための言語は何ですか？", answer: "HTML" },
+  { id: 2, genre: "基本技術", question: "HTMLで記述する際に重要な「検索エンジンに見つけてもらいやすくする工夫」を何と呼びますか？", answer: "SEO" },
+  { id: 3, genre: "基本技術", question: "視覚や操作に制限のある人にも情報を正しく届けるための対応を何と呼びますか？", answer: "アクセシビリティ" },
+  { id: 4, genre: "基本技術", question: "ウェブサイトの見た目（文字の大きさ、色、配置など）を整えるための言語は何ですか？", answer: "CSS" },
+  { id: 5, genre: "基本技術", question: "画面サイズに合わせてレイアウトを調整するデザイン手法を何と呼びますか？", answer: "レスポンシブデザイン" },
+  { id: 6, genre: "基本技術", question: "ウェブサイトに動きや反応を加えるための言語は何ですか？", answer: "JavaScript" },
+  { id: 7, genre: "基本技術", question: "HTML、CSS、JavaScriptの3つの技術を組み合わせることで、どのようなウェブサイトが実現できますか？", answer: "情報が伝わり、見た目が分かりやすく、使い勝手の良いサイト" },
+  { id: 8, genre: "基本技術", question: "ウェブサイトの内容を管理・更新するためのシステムを何と呼びますか？", answer: "CMS（コンテンツ管理システム）" },
+  { id: 9, genre: "基本技術", question: "CMSを導入する最大のメリットは何ですか？", answer: "コードを書かずに、管理画面から簡単に更新作業ができること" },
+  { id: 10, genre: "基本技術", question: "CMSを導入することで、企業の情報発信はどう変わりますか？", answer: "エンジニアに頼らず企画職などが更新でき、スピードと効率が向上する" },
+  { id: 11, genre: "基本技術", question: "使いやすいCMSを構築するための設計のポイントは何ですか？", answer: "更新頻度に合わせて編集範囲を制限するなど、使う人目線で設計すること" },
+  { id: 12, genre: "サーバー・仕組み", question: "ウェブサイトを表示するために必要な、インターネット上の「家」に例えられるものは何ですか？", answer: "Webサーバー" },
+  { id: 13, genre: "サーバー・仕組み", question: "ユーザーが検索結果をクリックした際、最初にサーバーの場所を問い合わせるシステムは何ですか？", answer: "DNS" },
+  { id: 14, genre: "サーバー・仕組み", question: "インターネット上の「住所」に該当する、サーバーの場所を示す番号は何ですか？", answer: "IPアドレス" },
+  { id: 15, genre: "サーバー・仕組み", question: "URLの中に含まれる、IPアドレスと紐付いている文字列を何と呼びますか？", answer: "ドメイン" },
+  { id: 16, genre: "サーバー・仕組み", question: "サーバーからダウンロードしたファイルをブラウザが解析し、画面に表示する処理は何ですか？", answer: "レンダリング" },
+  { id: 17, genre: "基本技術", question: "ブラウザ側で動くHTMLやCSS、JavaScriptなどを総称して何言語と呼びますか？", answer: "クライアントサイドの言語" },
+  { id: 18, genre: "基本技術", question: "サーバー側で動くPHPなどを総称して何言語と呼びますか？", answer: "サーバーサイドの言語" },
+  { id: 19, genre: "基本技術", question: "クライアントサイドとサーバーサイド、どちらの言語がイベント（ユーザーの動き）を感知できますか？", answer: "クライアントサイドの言語" },
+  { id: 20, genre: "基本技術", question: "フリーワード検索の結果に応じてHTMLを生成するのは、どちらの言語の役割ですか？", answer: "サーバーサイドの言語" },
+  { id: 21, genre: "制作・ツール", question: "コーディングに使う人気のソフトウェア（エディター）の代表例は何ですか？", answer: "Visual Studio Code" },
+  { id: 22, genre: "制作・ツール", question: "自分のパソコン上に作る開発環境のことを何と呼びますか？", answer: "ローカル環境" },
+  { id: 23, genre: "サーバー・仕組み", question: "ブログの記事データなどが蓄積されている「箱」のようなシステムを何と呼びますか？", answer: "データベース" },
+  { id: 24, genre: "サーバー・仕組み", question: "データベースから必要な情報を引き出してHTMLを生成するのは、どこで行われる処理ですか？", answer: "Webサーバー上" },
+  { id: 25, genre: "サーバー・仕組み", question: "HTML、CSS、JavaScriptのみのサイトではデータベースは必要ですか？", answer: "不要" },
+  { id: 26, genre: "サーバー・仕組み", question: "ローカル環境とサーバーを繋ぎ、ファイルをアップロードするためのソフトは何ですか？", answer: "FTPソフト" },
+  { id: 27, genre: "解析・SEO", question: "Googleなどの検索エンジンで使われる、ウェブサイトの情報を収集するロボットは何ですか？", answer: "クローラー" },
+  { id: 28, genre: "解析・SEO", question: "サイト公開時に、クローラーに情報収集に来てもらうようお願いする作業は何ですか？", answer: "インデックスリクエスト" },
+  { id: 29, genre: "解析・SEO", question: "検索順位を決めるためのGoogleの仕組みを何と呼びますか？", answer: "アルゴリズム" },
+  { id: 30, genre: "解析・SEO", question: "検索結果で上位に表示させるための施策を何と呼びますか？", answer: "SEO対策" },
+  { id: 31, genre: "サーバー・仕組み", question: "独自ドメインでメールアドレスを使うために、設定が必要な2つの場所はどこですか？", answer: "サーバー上とメールソフト側" },
+  { id: 32, genre: "デザイン・設計", question: "ホームページを開いた時に、一番最初に見える画面領域を何と呼びますか？", answer: "ファーストビュー" },
+  { id: 33, genre: "デザイン・設計", question: "デザインを作成する前に作る、画像や文章の配置を示した設計書は何ですか？", answer: "ワイヤーフレーム" },
+  { id: 34, genre: "デザイン・設計", question: "ワイヤーフレームを元に作られる、最終的なデザインの完成イメージは何ですか？", answer: "デザインカンプ" },
+  { id: 35, genre: "デザイン・設計", question: "スマートフォンユーザーが多いサイトで、スマホ版のデザインから先に作る手法は何ですか？", answer: "モバイルファースト" },
+  { id: 36, genre: "デザイン・設計", question: "サイト全体のデザインの一貫性や方向性のことを指す言葉は何ですか？", answer: "トンマナ（トーン＆マナー）" },
+  { id: 37, genre: "解析・指標", question: "ウェブサイトにおける最終的な目標行動（お問い合わせなど）を指す用語は何ですか？", answer: "CV（コンバージョン）" },
+  { id: 38, genre: "解析・指標", question: "サイトへのアクセスのうち、コンバージョンに至った割合を示す指標は何ですか？", answer: "CVR（コンバージョンレート）" },
+  { id: 39, genre: "解析・指標", question: "ユーザーに次の行動（資料請求など）を促す要素を動画内では何と呼んでいますか？", answer: "CTR（注：一般的にはCTA）" },
+  { id: 40, genre: "解析・指標", question: "重複しない訪問者の数を表す指標は何ですか？", answer: "UU（ユニークユーザー）" },
+  { id: 41, genre: "解析・指標", question: "閲覧されたページの合計数を表す指標は何ですか？", answer: "PV（ページビュー）" },
+  { id: 42, genre: "サーバー・仕組み", question: "インターネット上の「住所」と「家」は、それぞれ何に例えられますか？", answer: "住所はドメイン、家はサーバー" },
+  { id: 43, genre: "サーバー・仕組み", question: "FTPの「F」は何の略ですか？", answer: "File（ファイル）" },
+  { id: 44, genre: "サーバー・仕組み", question: "FTPの「T」は何の略ですか？", answer: "Transfer（転送）" },
+  { id: 45, genre: "サーバー・仕組み", question: "FTPの「P」は何の略ですか？", answer: "Protocol（ルール）" },
+  { id: 46, genre: "解析・ツール", question: "ユーザーがサイト内でどのページを何回見たか分析するGoogleのツールは何ですか？", answer: "Googleアナリティクス" },
+  { id: 47, genre: "解析・ツール", question: "検索キーワードや表示順位を分析するツールは何ですか？", answer: "サーチコンソール" },
+  { id: 48, genre: "解析・ツール", question: "「店内での行動」を観察するツールに例えられるのはどちらですか？", answer: "Googleアナリティクス" },
+  { id: 49, genre: "解析・ツール", question: "「外で看板を見て何人入店したか」を確認するツールに例えられるのはどれ？", answer: "サーチコンソール" },
+  { id: 50, genre: "制作・マインド", question: "専門用語で分からない言葉があった時にすべきことは何ですか？", answer: "放置せず、しっかり調べて覚える" },
+  { id: 51, genre: "基本技術", question: "HTMLでタグを使って意味を持たせることで、何に情報が伝わりやすくなりますか？", answer: "検索エンジン" },
+  { id: 52, genre: "基本技術", question: "音声読み上げツールへの対応は、何の向上に繋がりますか？", answer: "アクセシビリティ" },
+  { id: 53, genre: "基本技術", question: "同じHTMLでも、何を変更すれば見た目を劇的に変えられますか？", answer: "CSS" },
+  { id: 54, genre: "基本技術", question: "フォント、背景色、要素の間隔を調整する役割を持つのは何ですか？", answer: "CSS" },
+  { id: 55, genre: "基本技術", question: "入力フォームの文字数カウントやエラー通知を行う言語は何ですか？", answer: "JavaScript" },
+  { id: 56, genre: "制作・デザイン", question: "ブラウザによって表示が異なる場合、制作側はどうすべきですか？", answer: "表示の差異を調整し配慮する" },
+  { id: 57, genre: "基本技術", question: "WordPressはどのようなシステムの代表例ですか？", answer: "CMS" },
+  { id: 58, genre: "基本技術", question: "非エンジニアでもサイト更新を可能にする仕組みは何ですか？", answer: "CMS" },
+  { id: 59, genre: "基本技術", question: "CMSの管理画面は専用ソフトが必要ですか？", answer: "不要（ブラウザでOK）" },
+  { id: 60, genre: "サーバー・仕組み", question: "サイト公開に一般的に契約が必要な2つのものは何ですか？", answer: "ドメインとレンタルサーバー" },
+  { id: 61, genre: "制作・マインド", question: "Web制作の学習で、技術のほかに何を把握することが重要ですか？", answer: "各技術の相関関係と全体像" },
+  { id: 62, genre: "基本技術", question: "CMS導入で、更新を担当できるようになるのはどんな職種ですか？", answer: "企画職など非エンジニア" },
+  { id: 63, genre: "サーバー・仕組み", question: "Webサーバーへアクセスする際、DNSから取得する情報は何ですか？", answer: "IPアドレス" },
+  { id: 64, genre: "基本技術", question: "ユーザーのブラウザ上で実行される言語はどちらのタイプですか？", answer: "クライアントサイド" },
+  { id: 65, genre: "基本技術", question: "スクロールに合わせてアニメーションを動かす言語は何ですか？", answer: "JavaScript" },
+  { id: 66, genre: "基本技術", question: "ブログ一覧の並び替え処理など、HTML生成前行うのはどちら側？", answer: "サーバー側" },
+  { id: 67, genre: "制作・ツール", question: "ローカル環境構築用アプリの例は何ですか？", answer: "Local by Flywheel, MAMPなど" },
+  { id: 68, genre: "制作・ツール", question: "Visual Studio Codeを使う大きなメリットは何ですか？", answer: "利用者が多く情報が豊富なこと" },
+  { id: 69, genre: "サーバー・仕組み", question: "初心者がデータベース構造を自作しなくても済む理由は何ですか？", answer: "WordPress等がパッケージ化されているから" },
+  { id: 70, genre: "制作・マインド", question: "Web制作の学習順序として、先に学ぶべきなのはどちらですか？", answer: "クライアントサイド（HTML/CSS等）" },
+  { id: 71, genre: "サーバー・ツール", question: "FTPソフトの代わりに、WordPress移行でよく使われる手法は何ですか？", answer: "移行用プラグインの利用" },
+  { id: 72, genre: "解析・SEO", question: "クローラーはどうやって新しいサイトを見つけますか？", answer: "リンクを辿って巡回する" },
+  { id: 73, genre: "解析・SEO", question: "クローラーが集めた情報はどこに保存されますか？", answer: "Googleのデータベース" },
+  { id: 74, genre: "解析・SEO", question: "検索エンジンのアルゴリズムは公開されていますか？", answer: "非公開" },
+  { id: 75, genre: "サーバー・仕組み", question: "メールソフトを使うには、何と接続設定する必要がありますか？", answer: "メールサーバー" },
+  { id: 76, genre: "デザイン・設計", question: "サイトの第一印象を決める最重要エリアはどこですか？", answer: "ファーストビュー" },
+  { id: 77, genre: "デザイン・設計", question: "ワイヤーフレームを作る主な目的は何ですか？", answer: "デザイン前に構造や配置を確定させるため" },
+  { id: 78, genre: "デザイン・設計", question: "デザインカンプがないと、どのような問題が起きますか？", answer: "完成イメージが共有できず制作が止まる" },
+  { id: 79, genre: "デザイン・設計", question: "多様なデバイスに対応するために必須の考え方は何ですか？", answer: "レスポンスブデザイン" },
+  { id: 80, genre: "デザイン・設計", question: "PC版をスマホでそのまま見た時の主な問題は何ですか？", answer: "ボタンが押しにくい、操作性が下がる" },
+  { id: 81, genre: "デザイン・設計", question: "トンマナで「親しみやすさ」を出すために調整する要素は何ですか？", answer: "色、フォント、写真の雰囲気など" },
+  { id: 82, genre: "解析・指標", question: "CV（コンバージョン）の具体的なアクション例は何ですか？", answer: "資料請求、お問い合わせ" },
+  { id: 83, genre: "解析・指標", question: "100人中3人がCVした場合、CVRは何％ですか？", answer: "3%" },
+  { id: 84, genre: "解析・指標", question: "「今すぐ申し込み」など行動を促す要素を動画内では何と呼んでいますか？", answer: "CTR（注：一般的にはCTA）" },
+  { id: 85, genre: "解析・指標", question: "1人が5回訪問した場合、UU数はいくつですか？", answer: "1" },
+  { id: 86, genre: "解析・指標", question: "1人が5回訪問した場合、PV数はいくつですか？", answer: "5" },
+  { id: 87, genre: "サーバー・仕組み", question: "サイト公開時、ドメインと何を紐付ける必要がありますか？", answer: "サーバー" },
+  { id: 88, genre: "サーバー・仕組み", question: "画像や文章のまとまりを何と呼びますか？", answer: "ファイル" },
+  { id: 89, genre: "サーバー・仕組み", question: "作成したファイルを一括でサーバーに送るために使うソフトは何ですか？", answer: "FTPソフト" },
+  { id: 90, genre: "サーバー・仕組み", question: "サーバー管理画面から手動アップロードする際のデメリットは何ですか？", answer: "ログインの手間がかかり効率が悪い" },
+  { id: 91, genre: "解析・ツール", question: "サイト内でのユーザー行動を可視化するのはどのツールですか？", answer: "Googleアナリティクス" },
+  { id: 92, genre: "解析・ツール", question: "検索画面でのクリック数や表示キーワードを分析するのはどのツールですか？", answer: "サーチコンソール" },
+  { id: 93, genre: "解析・ツール", question: "特定の検索ワードでのサイト順位を確認できるツールは何ですか？", answer: "サーチコンソール" },
+  { id: 94, genre: "解析・ツール", question: "アナリティクスとサチコを併用する最大のメリットは何ですか？", answer: "集客からサイト内行動まで一貫して分析できる" },
+  { id: 95, genre: "制作・マインド", question: "専門用語を覚えることの実務上のメリットは何ですか？", answer: "周囲との意思疎通がスムーズになり信頼される" },
+  { id: 96, genre: "制作・マインド", question: "用語を調べてさらに不明点が出た時、どうすべきですか？", answer: "芋づる式に調べて知識を定着させる" },
+  { id: 97, genre: "基本技術", question: "DBへ問い合わせてブログ一覧を作るのは、どちら側の言語ですか？", answer: "サーバーサイド" },
+  { id: 98, genre: "解析・ツール", question: "Googleアナリティクス提供元はどこですか？", answer: "Google" },
+  { id: 99, genre: "解析・ツール", question: "サーチコンソールの提供元はどこですか？", answer: "Google" },
+  { id: 100, genre: "解析・ツール", question: "サーチコンソールは通称何と呼ばれますか？", answer: "サチコ" },
+];
+
+const App = () => {
+  const [cards, setCards] = useState(initialCards);
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [isFlipped, setIsFlipped] = useState(false);
+  const [gameState, setGameState] = useState('start');
+  const [showAnswerFirst, setShowAnswerFirst] = useState(false);
+  const [masteredIds, setMasteredIds] = useState(new Set());
+  const [unsureIds, setUnsureIds] = useState(new Set());
+  const [overlayType, setOverlayType] = useState(null); // 'unsure' | 'mastered' | null
+  const [expandedId, setExpandedId] = useState(null); // リスト内で展開されている問題のID
+
+  const startGame = (shuffle = false) => {
+    let newCards = [...initialCards];
+    if (shuffle) {
+      newCards = newCards.sort(() => Math.random() - 0.5);
+    }
+    setCards(newCards);
+    setCurrentIndex(0);
+    setIsFlipped(false);
+    setMasteredIds(new Set());
+    setUnsureIds(new Set());
+    setGameState('playing');
+  };
+
+  const handleNext = () => {
+    if (currentIndex < cards.length - 1) {
+      setIsFlipped(false);
+      setTimeout(() => {
+        setCurrentIndex(prev => prev + 1);
+      }, 150);
+    } else {
+      setGameState('finished');
+    }
+  };
+
+  const handleMastered = () => {
+    const currentCardId = cards[currentIndex].id;
+    const nextUnsure = new Set(unsureIds);
+    nextUnsure.delete(currentCardId);
+    setUnsureIds(nextUnsure);
+    const nextMastered = new Set(masteredIds);
+    nextMastered.add(currentCardId);
+    setMasteredIds(nextMastered);
+    handleNext();
+  };
+
+  const handleUnsureAction = () => {
+    const currentCardId = cards[currentIndex].id;
+    const nextMastered = new Set(masteredIds);
+    nextMastered.delete(currentCardId);
+    setMasteredIds(nextMastered);
+    const nextUnsure = new Set(unsureIds);
+    nextUnsure.add(currentCardId);
+    setUnsureIds(nextUnsure);
+    handleNext();
+  };
+
+  const handlePrev = () => {
+    if (currentIndex > 0) {
+      setIsFlipped(false);
+      setTimeout(() => {
+        setCurrentIndex(prev => prev - 1);
+      }, 150);
+    }
+  };
+
+  const handleFlip = () => {
+    setIsFlipped(!isFlipped);
+  };
+
+  const progress = ((currentIndex + 1) / cards.length) * 100;
+  const masteryRate = Math.round((masteredIds.size / cards.length) * 100);
+
+  const getGenreColor = (genre) => {
+    switch (genre) {
+      case "基本技術": return "bg-blue-50 text-blue-600 border-blue-100";
+      case "サーバー・仕組み": return "bg-purple-50 text-purple-600 border-purple-100";
+      case "デザイン・設計": return "bg-pink-50 text-pink-600 border-pink-100";
+      case "解析・ツール": return "bg-amber-50 text-amber-600 border-amber-100";
+      case "制作・ツール": return "bg-teal-50 text-teal-600 border-teal-100";
+      default: return "bg-slate-50 text-slate-600 border-slate-100";
+    }
+  };
+
+  const filteredList = useMemo(() => {
+    if (!overlayType) return [];
+    const targetSet = overlayType === 'unsure' ? unsureIds : masteredIds;
+    return initialCards.filter(card => targetSet.has(card.id));
+  }, [overlayType, unsureIds, masteredIds]);
+
+  // オーバーレイを開閉するときに展開状態をリセット
+  useEffect(() => {
+    setExpandedId(null);
+  }, [overlayType]);
+
+  return (
+    <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center p-4 font-sans text-slate-800">
+      <div className="w-full max-w-lg bg-white rounded-3xl shadow-2xl overflow-hidden border border-slate-100 relative">
+        
+        {/* Header */}
+        <div className="px-6 py-4 border-b border-slate-50 flex justify-between items-center bg-white relative z-10">
+          <h1 className="text-lg font-bold text-indigo-600 flex items-center gap-2">
+            Web制作基礎 100本ノック
+          </h1>
+          {gameState === 'playing' && (
+            <div className="flex gap-1.5 md:gap-2">
+              <button 
+                onClick={() => setOverlayType('mastered')}
+                className="text-[9px] md:text-[10px] font-bold text-green-600 bg-green-50 px-2 py-1 rounded-md flex items-center gap-1 border border-green-100 hover:bg-green-200 transition-colors"
+              >
+                <Check size={12} /> {masteredIds.size} 習得
+              </button>
+              <button 
+                onClick={() => setOverlayType('unsure')}
+                className="text-[9px] md:text-[10px] font-bold text-amber-600 bg-amber-50 px-2 py-1 rounded-md flex items-center gap-1 border border-amber-100 hover:bg-amber-100 transition-colors"
+              >
+                <HelpCircle size={12} /> {unsureIds.size} 不安
+              </button>
+              <span className="text-[9px] md:text-[10px] font-bold text-slate-400 bg-slate-100 px-2 py-1 rounded-md border border-slate-200">
+                {currentIndex + 1} / {cards.length}
+              </span>
+            </div>
+          )}
+        </div>
+
+        <div className="p-6 md:p-10">
+          {gameState === 'start' && (
+            <div className="py-8 text-center space-y-6">
+              <div className="bg-indigo-50 w-20 h-20 rounded-3xl flex items-center justify-center mx-auto">
+                <Languages className="w-10 h-10 text-indigo-500" />
+              </div>
+              <div className="space-y-2">
+                <h2 className="text-2xl font-black tracking-tight">学習スタート</h2>
+                <p className="text-slate-500 text-sm leading-relaxed">
+                  Web制作の基本から専門用語まで<br />全100問のフラッシュカードです。
+                </p>
+              </div>
+              
+              <div className="flex flex-col gap-3 pt-4">
+                <button 
+                  onClick={() => startGame(false)}
+                  className="w-full py-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl font-bold transition-all shadow-lg shadow-indigo-100 flex items-center justify-center gap-2 active:scale-95"
+                >
+                  <Play size={20} fill="currentColor" /> 順番通りに開始
+                </button>
+                <button 
+                  onClick={() => startGame(true)}
+                  className="w-full py-4 bg-white border-2 border-slate-100 hover:border-indigo-200 text-slate-600 rounded-2xl font-bold transition-all flex items-center justify-center gap-2 active:scale-95"
+                >
+                  <Shuffle size={20} /> シャッフルして開始
+                </button>
+              </div>
+
+              <div className="pt-2 flex items-center justify-center">
+                 <label className="flex items-center cursor-pointer gap-2 text-sm text-slate-500 hover:text-indigo-600 transition-colors">
+                    <input 
+                      type="checkbox" 
+                      checked={showAnswerFirst} 
+                      onChange={() => setShowAnswerFirst(!showAnswerFirst)}
+                      className="w-4 h-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+                    />
+                    答え（用語）を先に表示する
+                 </label>
+              </div>
+            </div>
+          )}
+
+          {gameState === 'playing' && (
+            <div className="space-y-8">
+              <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                <div 
+                  className="h-full bg-indigo-500 transition-all duration-700 ease-out"
+                  style={{ width: `${progress}%` }}
+                />
+              </div>
+
+              <div className="perspective-1000 h-80 w-full">
+                <div 
+                  onClick={handleFlip}
+                  className={`relative w-full h-full transition-transform duration-500 transform-style-3d cursor-pointer ${isFlipped ? 'rotate-y-180' : ''}`}
+                >
+                  <div className="absolute inset-0 backface-hidden bg-white border-2 border-slate-100 rounded-[2rem] flex flex-col items-center justify-center p-8 text-center shadow-sm">
+                    <span className={`absolute top-8 px-4 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border ${getGenreColor(cards[currentIndex].genre)}`}>
+                      {cards[currentIndex].genre}
+                    </span>
+                    
+                    <div className="flex-1 flex items-center justify-center mt-4">
+                      <p className="text-xl md:text-2xl font-bold leading-snug">
+                        {showAnswerFirst ? cards[currentIndex].answer : cards[currentIndex].question}
+                      </p>
+                    </div>
+
+                    <div className="mt-6 flex items-center gap-2 text-indigo-600 text-sm font-black bg-indigo-50 px-6 py-3 rounded-2xl border-2 border-indigo-100 animate-pulse">
+                      <MousePointerClick size={18} />
+                      <span>タップで答えを確認</span>
+                    </div>
+                  </div>
+
+                  <div className="absolute inset-0 backface-hidden bg-indigo-600 border-2 border-indigo-500 rounded-[2rem] flex flex-col items-center justify-center p-8 text-center rotate-y-180 shadow-indigo-200 shadow-2xl">
+                    <span className="text-[10px] font-bold text-indigo-200 uppercase tracking-[0.2em] mb-6">
+                      {showAnswerFirst ? 'EXPLANATION' : 'ANSWER'}
+                    </span>
+                    <div className="flex-1 flex items-center justify-center">
+                      <p className="text-xl md:text-2xl font-bold text-white leading-snug">
+                        {showAnswerFirst ? cards[currentIndex].question : cards[currentIndex].answer}
+                      </p>
+                    </div>
+                    <div className="mt-6 text-indigo-200 text-xs font-medium bg-white/10 px-4 py-2 rounded-full">
+                      タップで問題に戻る
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex flex-col gap-4">
+                <div className="flex items-center justify-center gap-3">
+                  <button 
+                    onClick={handlePrev}
+                    disabled={currentIndex === 0}
+                    className={`px-4 py-5 rounded-2xl transition-all flex items-center gap-1 ${currentIndex === 0 ? 'opacity-30 cursor-not-allowed' : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 active:scale-95'}`}
+                  >
+                    <ChevronLeft size={20} />
+                    <span className="font-bold">戻る</span>
+                  </button>
+
+                  <button 
+                    onClick={handleMastered}
+                    className="flex-[1.2] py-5 bg-green-600 hover:bg-green-700 text-white rounded-2xl font-black text-lg transition-all shadow-xl shadow-green-100 flex items-center justify-center gap-2 active:scale-95"
+                  >
+                    <CheckCircle2 size={24} /> 覚えた！
+                  </button>
+
+                  <button 
+                    onClick={handleUnsureAction}
+                    className="flex-1 py-5 bg-amber-500 hover:bg-amber-600 text-white rounded-2xl font-bold text-lg transition-all shadow-xl shadow-amber-100 flex items-center justify-center gap-2 active:scale-95"
+                  >
+                    <HelpCircle size={22} /> 不安...
+                  </button>
+                </div>
+                
+                <button 
+                  onClick={() => setGameState('start')}
+                  className="mt-2 py-3 px-6 text-slate-400 hover:text-indigo-500 text-xs font-bold transition-all flex items-center justify-center gap-2 hover:bg-slate-50 rounded-xl"
+                >
+                  <Home size={14} /> TOPへと戻る
+                </button>
+                
+                <p className="text-center text-[10px] text-slate-400 font-bold uppercase tracking-widest">
+                  ステータスを選んで次に進みます
+                </p>
+              </div>
+            </div>
+          )}
+
+          {gameState === 'finished' && (
+            <div className="py-10 text-center space-y-6 animate-in fade-in zoom-in duration-500">
+              <div className="relative inline-block">
+                <div className="bg-green-50 w-24 h-24 rounded-full flex items-center justify-center mx-auto text-green-500">
+                  <CheckCircle2 size={56} />
+                </div>
+                <div className="absolute -top-2 -right-2 bg-yellow-400 text-white text-[10px] font-bold px-2 py-1 rounded-full shadow-sm">
+                  {masteryRate}% MASTERED
+                </div>
+              </div>
+              <div className="space-y-2">
+                <h2 className="text-2xl font-black">学習終了！</h2>
+                <div className="flex justify-center gap-4 py-2">
+                  <button 
+                    onClick={() => setOverlayType('mastered')}
+                    className="text-center hover:scale-105 transition-transform"
+                  >
+                    <p className="text-green-600 text-xl font-black">{masteredIds.size}</p>
+                    <p className="text-slate-400 text-[10px] font-bold">習得済み</p>
+                  </button>
+                  <button 
+                    onClick={() => setOverlayType('unsure')}
+                    className="text-center hover:scale-105 transition-transform"
+                  >
+                    <p className="text-amber-600 text-xl font-black">{unsureIds.size}</p>
+                    <p className="text-slate-400 text-[10px] font-bold">不安あり</p>
+                  </button>
+                </div>
+                <p className="text-slate-400 text-xs">不安な問題をゼロにするのが目標です！</p>
+              </div>
+              
+              <div className="bg-slate-50 p-4 rounded-2xl text-left flex gap-3 border border-slate-100">
+                <Info className="text-indigo-500 shrink-0" size={20} />
+                <p className="text-[11px] text-slate-500 leading-tight">
+                  ※注記: 動画内で「CTR」と紹介されていた箇所は、一般的には「CTA」と呼ばれることが多い用語です。
+                </p>
+              </div>
+
+              <div className="pt-6 flex flex-col gap-2">
+                <button 
+                  onClick={() => startGame(false)}
+                  className="w-full py-4 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl font-bold transition-all flex items-center justify-center gap-2 active:scale-95 shadow-lg shadow-indigo-100"
+                >
+                  <RotateCcw size={20} /> 最初からやり直す
+                </button>
+                <button 
+                  onClick={() => setGameState('start')}
+                  className="w-full py-4 bg-white border-2 border-slate-100 hover:border-indigo-100 text-slate-600 rounded-2xl font-bold transition-all flex items-center justify-center gap-2 active:scale-95"
+                >
+                  <Home size={20} /> TOP画面へ戻る
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* 問題一覧オーバーレイモーダル */}
+        {overlayType && (
+          <div className="absolute inset-0 z-50 bg-slate-900/40 backdrop-blur-sm animate-in fade-in duration-200 flex items-end">
+            <div className="bg-white w-full h-[85%] rounded-t-[2.5rem] flex flex-col shadow-2xl animate-in slide-in-from-bottom duration-300">
+              <div className="p-6 flex justify-between items-center border-b border-slate-100">
+                <div className="flex items-center gap-2">
+                  <div className={`p-2 rounded-xl ${overlayType === 'unsure' ? 'bg-amber-100 text-amber-600' : 'bg-green-100 text-green-600'}`}>
+                    {overlayType === 'unsure' ? <HelpCircle size={18} /> : <CheckCircle2 size={18} />}
+                  </div>
+                  <div>
+                    <h3 className="font-black text-slate-800">
+                      {overlayType === 'unsure' ? '不安な問題' : '習得した問題'}
+                    </h3>
+                    <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">
+                      {filteredList.length} items
+                    </p>
+                  </div>
+                </div>
+                <button 
+                  onClick={() => setOverlayType(null)}
+                  className="p-2 bg-slate-50 rounded-full text-slate-400 hover:bg-slate-100 active:scale-90 transition-all"
+                >
+                  <X size={20} />
+                </button>
+              </div>
+              
+              <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-slate-50/50">
+                {filteredList.length === 0 ? (
+                  <div className="h-full flex flex-col items-center justify-center text-slate-400 space-y-2">
+                    <Info size={32} strokeWidth={1.5} />
+                    <p className="text-sm font-medium">該当する問題はありません</p>
+                  </div>
+                ) : (
+                  filteredList.map(card => {
+                    const isExpanded = expandedId === card.id;
+                    return (
+                      <div 
+                        key={card.id} 
+                        onClick={() => setExpandedId(isExpanded ? null : card.id)}
+                        className={`bg-white p-4 rounded-2xl border transition-all duration-300 cursor-pointer ${isExpanded ? 'border-indigo-300 shadow-md ring-1 ring-indigo-50' : 'border-slate-100 shadow-sm hover:border-slate-200'}`}
+                      >
+                        <div className="flex justify-between items-start">
+                          <span className={`px-2 py-0.5 rounded-md text-[8px] font-black border ${getGenreColor(card.genre)}`}>
+                            {card.genre}
+                          </span>
+                          {isExpanded ? <ChevronUp size={14} className="text-slate-300" /> : <ChevronDown size={14} className="text-slate-300" />}
+                        </div>
+                        
+                        <p className={`mt-2 text-sm font-bold text-slate-800 leading-snug transition-all ${isExpanded ? 'text-indigo-900' : ''}`}>
+                          {card.question}
+                        </p>
+
+                        {/* 展開されたときに表示される解説（答え）セクション */}
+                        <div className={`overflow-hidden transition-all duration-300 ${isExpanded ? 'max-h-40 opacity-100 mt-4' : 'max-h-0 opacity-0'}`}>
+                          <div className="bg-indigo-50/50 p-4 rounded-xl border border-indigo-100 flex flex-col gap-2">
+                            <span className="text-[10px] font-black text-indigo-400 uppercase tracking-widest border-b border-indigo-100 pb-1">
+                              解説・答え
+                            </span>
+                            <p className="text-base font-black text-indigo-600 leading-relaxed">
+                              {card.answer}
+                            </p>
+                          </div>
+                        </div>
+
+                        {!isExpanded && (
+                          <div className="mt-2 text-[9px] text-slate-300 flex items-center gap-1 font-bold italic">
+                            <MousePointerClick size={10} /> クリックで答えを表示
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+
+      <p className="mt-8 text-slate-400 text-[10px] uppercase tracking-widest font-bold">
+        Web Production Terminology Course
+      </p>
+
+      <style dangerouslySetInnerHTML={{ __html: `
+        .perspective-1000 { perspective: 1000px; }
+        .transform-style-3d { transform-style: preserve-3d; }
+        .backface-hidden { backface-visibility: hidden; }
+        .rotate-y-180 { transform: rotateY(180deg); }
+      ` }} />
+    </div>
+  );
+};
+
+export default App;
